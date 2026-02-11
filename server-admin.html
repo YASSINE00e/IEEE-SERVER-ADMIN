@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IEEE FSM - Server Admin Panel</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Consolas", "Monaco", monospace;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        min-height: 100vh;
+      }
+      .terminal-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .terminal-header {
+        background: #2d2d30;
+        padding: 10px 20px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .window-controls {
+        display: flex;
+        gap: 8px;
+      }
+      .window-btn {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .btn-close {
+        background: #f44;
+      }
+      .btn-minimize {
+        background: #fb4;
+      }
+      .btn-maximize {
+        background: #4f4;
+      }
+      .terminal-title {
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+      .terminal-body {
+        background: #1e1e1e;
+        min-height: 80vh;
+        padding: 20px;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        border: 1px solid #2d2d30;
+      }
+      .login-screen {
+        max-width: 600px;
+        margin: 100px auto;
+      }
+      .login-screen.hidden {
+        display: none;
+      }
+      .terminal-prompt {
+        color: #4ec9b0;
+        margin-bottom: 20px;
+      }
+      .input-line {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .prompt-symbol {
+        color: #4ec9b0;
+        margin-right: 10px;
+      }
+      .terminal-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #d4d4d4;
+        font-family: inherit;
+        font-size: 1rem;
+        outline: none;
+      }
+      .error-text {
+        color: #f44747;
+        margin: 10px 0;
+      }
+      .success-text {
+        color: #4ec9b0;
+        margin: 10px 0;
+      }
+      .main-panel {
+        display: none;
+      }
+      .main-panel.active {
+        display: block;
+      }
+      .toolbar {
+        background: #2d2d30;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      .tool-btn {
+        padding: 8px 16px;
+        background: #0e639c;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.9rem;
+      }
+      .tool-btn:hover {
+        background: #1177bb;
+      }
+      .tool-btn.danger {
+        background: #c5373c;
+      }
+      .tool-btn.danger:hover {
+        background: #d9534f;
+      }
+      .log-entry {
+        background: #252526;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-left: 3px solid #4ec9b0;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+      .log-time {
+        color: #608b4e;
+      }
+      .log-user {
+        color: #4ec9b0;
+        font-weight: bold;
+      }
+      .log-action {
+        color: #d4d4d4;
+      }
+      .log-warning {
+        border-left-color: #ffa500;
+      }
+      .log-critical {
+        border-left-color: #f44747;
+      }
+      .ip-address {
+        color: #ce9178;
+      }
+      .highlight-box {
+        background: #2d2d30;
+        padding: 20px;
+        border-radius: 6px;
+        border-left: 4px solid #f44747;
+        margin-top: 30px;
+      }
+      .section-divider {
+        border-top: 2px solid #2d2d30;
+        margin: 30px 0;
+        padding-top: 20px;
+      }
+      .info-box {
+        background: #252526;
+        padding: 15px;
+        border-left: 3px solid #4ec9b0;
+        border-radius: 4px;
+        margin: 15px 0;
+      }
+      .date-header {
+        background: #2d2d30;
+        padding: 10px 15px;
+        margin: 20px 0 10px 0;
+        border-radius: 4px;
+        color: #4ec9b0;
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="terminal-container">
+      <div class="terminal-header">
+        <div class="window-controls">
+          <div class="window-btn btn-close"></div>
+          <div class="window-btn btn-minimize"></div>
+          <div class="window-btn btn-maximize"></div>
+        </div>
+        <div class="terminal-title">root@ieee-server:~</div>
+      </div>
+
+      <div class="terminal-body">
+        <!-- Login Screen -->
+        <div class="login-screen" id="loginScreen">
+          <div class="terminal-prompt">
+            IEEE FSM Server - Admin Access Terminal<br />
+            ═══════════════════════════════════════<br />
+            Faculty of Science of Monastir<br />
+            Unauthorized access is prohibited.<br /><br />
+          </div>
+
+          <form onsubmit="adminLogin(event)">
+            <div class="input-line">
+              <span class="prompt-symbol">admin@ieee-server:~$</span>
+              <span style="margin-right: 10px">login</span>
+              <input
+                type="text"
+                class="terminal-input"
+                id="username"
+                placeholder="username"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="input-line">
+              <span class="prompt-symbol">admin@ieee-server:~$</span>
+              <span style="margin-right: 10px">password</span>
+              <input
+                type="password"
+                class="terminal-input"
+                id="password"
+                placeholder="••••••••"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="input-line">
+              <span class="prompt-symbol">admin@ieee-server:~$</span>
+              <button
+                type="submit"
+                style="
+                  background: none;
+                  border: none;
+                  color: #4ec9b0;
+                  cursor: pointer;
+                  font-family: inherit;
+                  font-size: 1rem;
+                "
+              >
+                authenticate
+              </button>
+            </div>
+          </form>
+
+          <div class="error-text" id="errorMsg" style="display: none">
+            ✗ Authentication failed. Access denied.
+          </div>
+
+          <div style="margin-top: 30px">
+            <a href="index.html" style="color: #4ec9b0; text-decoration: none">← exit</a>
+          </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel" id="mainPanel">
+          <div class="toolbar">
+            <button class="tool-btn" onclick="showLogs()">📋 View Server Logs</button>
+            <button class="tool-btn" onclick="showKeycard()">🔑 Key Card Access</button>
+            <button class="tool-btn" onclick="showActivity()">📊 User Activity</button>
+            <button class="tool-btn danger" onclick="logout()">⚠ Logout</button>
+          </div>
+
+          <!-- Server Logs Section -->
+          <div id="logsSection" style="display: none">
+            <h3 style="color: #4ec9b0; margin-bottom: 20px">
+              Server Access Logs - December 13, 2025
+            </h3>
+            <h4 style="color: #ce9178; margin-bottom: 15px">
+              ⚠ SUSPICIOUS ACTIVITY DETECTED - USER: admin_02
+            </h4>
+            <div id="logsContainer"></div>
+          </div>
+
+          <!-- Keycard Section -->
+          <div id="keycardSection" style="display: none">
+            <h3 style="color: #4ec9b0; margin-bottom: 20px">Key Card Access Logs - IEEE Office</h3>
+            <div id="keycardContainer"></div>
+          </div>
+
+          <!-- Activity Section -->
+          <div id="activitySection" style="display: none">
+            <h3 style="color: #4ec9b0; margin-bottom: 20px">
+              User Internet Activity - Multi-Day Analysis
+            </h3>
+            <div id="activityContainer"></div>
+          </div>
+
+          <!-- Security Camera Section -->
+          <div id="securitySection" style="display: none">
+            <h3 style="color: #4ec9b0; margin-bottom: 20px">
+              Security Camera Footage Analysis - December 13, 2025
+            </h3>
+            <div id="securityContainer"></div>
+          </div>
+
+          <!-- Witness Statements Section -->
+          <div id="witnessSection" style="display: none">
+            <h3 style="color: #4ec9b0; margin-bottom: 20px">
+              Digital Witness Statements & Communications
+            </h3>
+            <div id="witnessContainer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const ADMIN_USER = "admin";
+      const ADMIN_PASS = "root2025";
+
+      const serverLogs = [
+        {
+          time: "20:42:15",
+          user: "admin_02",
+          action: "SSH Login",
+          ip: "41.230.###.67",
+          details: "Successful authentication from home IP",
+          warning: false,
+        },
+        {
+          time: "20:42:48",
+          user: "admin_02",
+          action: "Directory Access",
+          details: "Navigated to /var/www/ieee-fsm/media/",
+          warning: false,
+        },
+        {
+          time: "20:43:18",
+          user: "admin_02",
+          action: "Directory Access",
+          details: "Accessed /media/excom_meetings/recordings/",
+          warning: true,
+        },
+        {
+          time: "20:44:22",
+          user: "admin_02",
+          action: "File List",
+          details: "Listed contents of recordings directory (18 files)",
+          warning: false,
+        },
+        {
+          time: "20:45:22",
+          user: "admin_02",
+          action: "File Download START",
+          details: "EXCOM_Nov15_Meeting.mp4 (156 MB)",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:46:35",
+          user: "admin_02",
+          action: "File Download COMPLETE",
+          details: "EXCOM_Nov15_Meeting.mp4 downloaded successfully",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:47:15",
+          user: "admin_02",
+          action: "File Download START",
+          details: "EXCOM_Dec03_Meeting.mp4 (142 MB)",
+          warning: true,
+        },
+        {
+          time: "20:48:28",
+          user: "admin_02",
+          action: "File Download COMPLETE",
+          details: "EXCOM_Dec03_Meeting.mp4 downloaded successfully",
+          warning: true,
+        },
+        {
+          time: "20:49:05",
+          user: "admin_02",
+          action: "Directory Access",
+          details: "Accessed /media/voice_recordings/cs_chapter/",
+          warning: true,
+        },
+        {
+          time: "20:49:16",
+          user: "admin_02",
+          action: "File Download START",
+          details: "Amine_voice_segments.mp3 (12 MB)",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:49:42",
+          user: "admin_02",
+          action: "File Download COMPLETE",
+          details: "Amine_voice_segments.mp3 downloaded",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:50:15",
+          user: "admin_02",
+          action: "Command Executed",
+          details: "ffmpeg -i Amine_voice_segments.mp3 -ar 44100 output.wav",
+          warning: true,
+        },
+        {
+          time: "20:51:33",
+          user: "admin_02",
+          action: "Process Started",
+          details: "Python script: voice_synthesis.py",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:52:33",
+          user: "admin_02",
+          action: "Browser Access",
+          details: "Opened Telegram Web interface via Firefox",
+          warning: true,
+        },
+        {
+          time: "20:53:47",
+          user: "admin_02",
+          action: "Telegram Login",
+          details: "Logged into Telegram account +216-###-###",
+          warning: true,
+        },
+        {
+          time: "20:55:12",
+          user: "admin_02",
+          action: "File Creation",
+          details: "Created synthesized_voice_23sec.mp3",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:55:47",
+          user: "admin_02",
+          action: "File Upload",
+          details: "Uploaded audio file (23 seconds) to Telegram contact: Ela Hassine",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "20:56:22",
+          user: "admin_02",
+          action: "Message Sent",
+          details: "Voice message sent via Telegram (timestamp: 21:22 - scheduled send)",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:18:44",
+          user: "admin_02",
+          action: "Remote Desktop",
+          details: "Connected to IEEE Office Computer (192.168.1.47) via RDP",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:18:58",
+          user: "admin_02",
+          action: "Screen Share",
+          details: "Remote desktop session established",
+          warning: true,
+        },
+        {
+          time: "21:19:12",
+          user: "admin_02",
+          action: "Email Login",
+          details: "Accessed email account: amine.zbaa@ieee-fsm.tn",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:19:45",
+          user: "admin_02",
+          action: "Credentials Used",
+          details: "Used stored password from credential manager",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:20:33",
+          user: "admin_02",
+          action: "Email Access",
+          details: "Opened inbox for amine.zbaa@ieee-fsm.tn",
+          warning: true,
+        },
+        {
+          time: "21:21:18",
+          user: "admin_02",
+          action: "Email Compose",
+          details: "New draft created to ela.hassine@ieee-fsm.tn",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:21:47",
+          user: "admin_02",
+          action: "Email Draft Saved",
+          details: 'Subject: "We need to talk - URGENT"',
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:22:15",
+          user: "admin_02",
+          action: "Email Draft",
+          details: "Draft contains threatening content",
+          warning: true,
+          critical: true,
+        },
+        {
+          time: "21:23:02",
+          user: "admin_02",
+          action: "File Access",
+          details: "Opened browser history deletion tool",
+          warning: true,
+        },
+        {
+          time: "21:23:58",
+          user: "admin_02",
+          action: "Email Draft",
+          details: "Draft left unsent (intentionally)",
+          warning: true,
+        },
+        {
+          time: "21:24:12",
+          user: "admin_02",
+          action: "Remote Desktop",
+          details: "Session terminated from office computer",
+          warning: true,
+        },
+        {
+          time: "21:24:45",
+          user: "admin_02",
+          action: "File Deletion",
+          details: "Deleted voice_synthesis.py and temporary audio files",
+          warning: true,
+        },
+        {
+          time: "21:25:03",
+          user: "admin_02",
+          action: "SSH Logout",
+          details: "Session ended, cleared bash history",
+          warning: true,
+        },
+      ];
+
+      const keyCardLogs = [
+        // December 6, 2025
+        {
+          date: "Dec 06",
+          time: "08:12:15",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 06",
+          time: "09:33:22",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 06",
+          time: "10:18:47",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 06",
+          time: "13:45:33",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 06",
+          time: "16:22:18",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 06",
+          time: "17:48:55",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 06",
+          time: "19:15:42",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 06",
+          time: "20:33:27",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 7, 2025
+        {
+          date: "Dec 07",
+          time: "08:45:18",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 07",
+          time: "09:22:44",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 07",
+          time: "11:15:33",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 07",
+          time: "14:38:22",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 07",
+          time: "15:52:47",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 07",
+          time: "18:28:15",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 8, 2025
+        {
+          date: "Dec 08",
+          time: "08:22:15",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 08",
+          time: "09:55:33",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 08",
+          time: "10:42:18",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 08",
+          time: "13:45:33",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 08",
+          time: "14:28:22",
+          user: "mohamed.amine.triki",
+          name: "Mohamed Amine Triki",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 08",
+          time: "16:18:47",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 08",
+          time: "16:28:44",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 08",
+          time: "17:52:15",
+          user: "mohamed.amine.triki",
+          name: "Mohamed Amine Triki",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 08",
+          time: "18:35:28",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 08",
+          time: "19:15:52",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 9, 2025
+        {
+          date: "Dec 09",
+          time: "09:15:44",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 09",
+          time: "10:33:18",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 09",
+          time: "11:28:55",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 09",
+          time: "12:45:22",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 09",
+          time: "15:22:18",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 09",
+          time: "15:42:33",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 09",
+          time: "17:18:22",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 09",
+          time: "18:55:47",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 10, 2025
+        {
+          date: "Dec 10",
+          time: "08:15:22",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 10",
+          time: "09:42:15",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 10",
+          time: "10:18:33",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 10",
+          time: "11:35:47",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 10",
+          time: "14:22:47",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 10",
+          time: "15:48:33",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 10",
+          time: "17:35:18",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 10",
+          time: "18:12:42",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 10",
+          time: "19:28:05",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 10",
+          time: "20:45:33",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 11, 2025
+        {
+          date: "Dec 11",
+          time: "08:45:17",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 11",
+          time: "09:15:44",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 11",
+          time: "10:33:22",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 11",
+          time: "11:48:55",
+          user: "mohamed.amine.triki",
+          name: "Mohamed Amine Triki",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 11",
+          time: "13:22:18",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 11",
+          time: "14:15:33",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 11",
+          time: "15:42:18",
+          user: "mohamed.amine.triki",
+          name: "Mohamed Amine Triki",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 11",
+          time: "16:28:47",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 11",
+          time: "18:15:22",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 11",
+          time: "18:55:12",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 12, 2025
+        {
+          date: "Dec 12",
+          time: "07:52:33",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 12",
+          time: "09:18:44",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 12",
+          time: "10:45:28",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 12",
+          time: "11:33:15",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 12",
+          time: "13:22:15",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 12",
+          time: "14:38:52",
+          user: "sarah.ben.amor",
+          name: "Sarah Ben Amor",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 12",
+          time: "15:55:28",
+          user: "amine.zbaa",
+          name: "Amine Zbaa",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 12",
+          time: "16:15:47",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 12",
+          time: "19:42:33",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 12",
+          time: "21:18:25",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 13, 2025 - THE CRITICAL DAY
+        {
+          date: "Dec 13",
+          time: "18:45:12",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 13",
+          time: "19:22:08",
+          user: "marwen.ben.salem",
+          name: "Marwen Ben Salem",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 13",
+          time: "20:18:33",
+          user: "ela.hassine",
+          name: "Ela Hassine",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 13",
+          time: "20:35:47",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 13",
+          time: "21:12:22",
+          user: "nour.elhouda.abidi",
+          name: "Nour Elhouda Abidi",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        {
+          date: "Dec 13",
+          time: "21:58:47",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 13",
+          time: "22:43:22",
+          user: "yassine.azzouz",
+          name: "Yassine Azzouz",
+          location: "IEEE Office - Main Door",
+          action: "EXIT",
+        },
+        // December 14, 2025 - DISCOVERY
+        {
+          date: "Dec 14",
+          time: "07:28:15",
+          user: "ikhlas.bahia",
+          name: "Ikhlas Bahia",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 14",
+          time: "08:45:33",
+          user: "police.security",
+          name: "Campus Security",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 14",
+          time: "09:12:47",
+          user: "forensics.team",
+          name: "Forensics Team",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 14",
+          time: "10:35:22",
+          user: "detective.mahmoud",
+          name: "Detective Mahmoud",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        // December 15, 2025
+        {
+          date: "Dec 15",
+          time: "08:00:00",
+          user: "police.security",
+          name: "Campus Security",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+        {
+          date: "Dec 15",
+          time: "10:15:33",
+          user: "forensics.team",
+          name: "Forensics Team",
+          location: "IEEE Office - Main Door",
+          action: "GRANTED",
+        },
+      ];
+
+      const userActivity = {
+        // December 11, 2025 - Amine Zbaa
+        "Dec 11 - Amine Zbaa": [
+          {
+            time: "19:15:22",
+            user: "Amine Zbaa",
+            service: "Spotify",
+            action: "Streaming session started",
+            ip: "197.27.###.142",
+            details: "Playlist: Coding Focus",
+          },
+          {
+            time: "20:33:15",
+            user: "Amine Zbaa",
+            service: "GitHub",
+            action: "Repository push",
+            ip: "197.27.###.142",
+            details: "Project: ieee-website-redesign",
+          },
+          {
+            time: "21:45:47",
+            user: "Amine Zbaa",
+            service: "Discord",
+            action: "Voice channel joined",
+            ip: "197.27.###.142",
+            details: "Server: CS Study Group",
+          },
+          {
+            time: "23:22:18",
+            user: "Amine Zbaa",
+            service: "Discord",
+            action: "Voice channel ended",
+            ip: "197.27.###.142",
+            details: "Session duration: 96 minutes",
+          },
+        ],
+        // December 12, 2025 - Amine Zbaa
+        "Dec 12 - Amine Zbaa": [
+          {
+            time: "14:32:18",
+            user: "Amine Zbaa",
+            service: "Messenger",
+            action: "Password changed",
+            ip: "197.27.###.142",
+            details: "New password: zobaa@983367+1",
+          },
+          {
+            time: "17:45:33",
+            user: "Amine Zbaa",
+            service: "Steam",
+            action: "Game launch",
+            ip: "197.27.###.142",
+            details: "Counter-Strike 2",
+          },
+          {
+            time: "19:28:44",
+            user: "Amine Zbaa",
+            service: "Steam",
+            action: "Game session ended",
+            ip: "197.27.###.142",
+            details: "Play time: 103 minutes",
+          },
+          {
+            time: "20:15:22",
+            user: "Amine Zbaa",
+            service: "YouTube",
+            action: "Video streaming",
+            ip: "197.27.###.142",
+            details: "Tech tutorials playlist",
+          },
+          {
+            time: "22:42:18",
+            user: "Amine Zbaa",
+            service: "Twitter",
+            action: "Scrolling feed",
+            ip: "197.27.###.142",
+            details: "Tech news and updates",
+          },
+        ],
+        // December 13, 2025 - Amine Zbaa (CRITICAL DAY)
+        "Dec 13 - Amine Zbaa": [
+          {
+            time: "18:45:22",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Streaming session started",
+            ip: "197.27.###.142",
+            details: "Series: Breaking Bad S3E7",
+          },
+          {
+            time: "19:32:14",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Episode completed",
+            ip: "197.27.###.142",
+            details: "Auto-play to next episode",
+          },
+          {
+            time: "20:18:05",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Still watching confirmation",
+            ip: "197.27.###.142",
+            details: "User clicked continue watching",
+          },
+          {
+            time: "20:34:05",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Episode change",
+            ip: "197.27.###.142",
+            details: "Now watching S3E8",
+          },
+          {
+            time: "21:22:48",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Episode completed",
+            ip: "197.27.###.142",
+            details: "S3E8 finished",
+          },
+          {
+            time: "21:46:11",
+            user: "Amine Zbaa",
+            service: "Netflix",
+            action: "Streaming session ended",
+            ip: "197.27.###.142",
+            details: "User manually stopped",
+          },
+          {
+            time: "22:05:38",
+            user: "Amine Zbaa",
+            service: "YouTube Mobile",
+            action: "App opened",
+            ip: "197.27.###.142",
+            details: "Mobile browsing started",
+          },
+          {
+            time: "22:15:22",
+            user: "Amine Zbaa",
+            service: "YouTube Mobile",
+            action: "Video watched",
+            ip: "197.27.###.142",
+            details: "Tech review video (12 min)",
+          },
+          {
+            time: "22:31:47",
+            user: "Amine Zbaa",
+            service: "YouTube Mobile",
+            action: "Video watched",
+            ip: "197.27.###.142",
+            details: "Gaming highlights (8 min)",
+          },
+          {
+            time: "22:47:15",
+            user: "Amine Zbaa",
+            service: "Reddit Mobile",
+            action: "App active",
+            ip: "197.27.###.142",
+            details: "Browsing r/programming",
+          },
+          {
+            time: "23:12:33",
+            user: "Amine Zbaa",
+            service: "Reddit Mobile",
+            action: "Commenting activity",
+            ip: "197.27.###.142",
+            details: "Posted 2 comments",
+          },
+          {
+            time: "23:45:18",
+            user: "Amine Zbaa",
+            service: "Reddit Mobile",
+            action: "Session ended",
+            ip: "197.27.###.142",
+            details: "App closed",
+          },
+        ],
+        // December 11, 2025 - Yassine Azzouz
+        "Dec 11 - Yassine Azzouz": [
+          {
+            time: "18:22:15",
+            user: "Yassine Azzouz",
+            service: "Facebook",
+            action: "Login",
+            ip: "41.230.###.67",
+            details: "Standard browsing",
+          },
+          {
+            time: "19:45:33",
+            user: "Yassine Azzouz",
+            service: "Instagram",
+            action: "Stories viewing",
+            ip: "41.230.###.67",
+            details: "Multiple stories watched",
+          },
+          {
+            time: "21:15:22",
+            user: "Yassine Azzouz",
+            service: "Gmail",
+            action: "Email checking",
+            ip: "41.230.###.67",
+            details: "Regular inbox review",
+          },
+        ],
+        // December 12, 2025 - Yassine Azzouz
+        "Dec 12 - Yassine Azzouz": [
+          {
+            time: "17:33:44",
+            user: "Yassine Azzouz",
+            service: "LinkedIn",
+            action: "Profile browsing",
+            ip: "41.230.###.67",
+            details: "Job market research",
+          },
+          {
+            time: "19:22:18",
+            user: "Yassine Azzouz",
+            service: "YouTube",
+            action: "Video watching",
+            ip: "41.230.###.67",
+            details: "Various tech content",
+          },
+          {
+            time: "21:45:55",
+            user: "Yassine Azzouz",
+            service: "WhatsApp Web",
+            action: "Messaging active",
+            ip: "41.230.###.67",
+            details: "Multiple conversations",
+          },
+        ],
+        // December 13, 2025 - Yassine Azzouz (CRITICAL DAY)
+        "Dec 13 - Yassine Azzouz": [
+          {
+            time: "18:15:33",
+            user: "Yassine Azzouz",
+            service: "Facebook",
+            action: "Login from mobile",
+            ip: "41.230.###.67",
+            details: "Standard browsing session",
+          },
+          {
+            time: "18:42:18",
+            user: "Yassine Azzouz",
+            service: "Instagram",
+            action: "App opened",
+            ip: "41.230.###.67",
+            details: "Scrolling feed",
+          },
+          {
+            time: "19:15:44",
+            user: "Yassine Azzouz",
+            service: "WhatsApp Web",
+            action: "Desktop login",
+            ip: "41.230.###.67",
+            details: "Multiple conversations active",
+          },
+          {
+            time: "20:38:22",
+            user: "Yassine Azzouz",
+            service: "System",
+            action: "VPN Connection",
+            ip: "41.230.###.67 → VPN Server",
+            details: "Connected to NordVPN (Netherlands server)",
+          },
+          {
+            time: "20:39:05",
+            user: "Yassine Azzouz",
+            service: "System",
+            action: "IP Changed",
+            ip: "185.###.###.42 (NL)",
+            details: "All traffic now routed through VPN",
+          },
+          {
+            time: "21:58:00",
+            user: "Yassine Azzouz",
+            service: "System",
+            action: "VPN Disconnected",
+            ip: "Return to 41.230.###.67",
+            details: "VPN session terminated before leaving home",
+          },
+          {
+            time: "23:15:47",
+            user: "Yassine Azzouz",
+            service: "YouTube",
+            action: "Video search",
+            ip: "41.230.###.67",
+            details: "Searched: 'how to clear digital footprints'",
+          },
+          {
+            time: "23:28:33",
+            user: "Yassine Azzouz",
+            service: "Google",
+            action: "Search query",
+            ip: "41.230.###.67",
+            details: "Searched: 'forensic evidence in emails'",
+          },
+          {
+            time: "23:52:18",
+            user: "Yassine Azzouz",
+            service: "Google",
+            action: "Search query",
+            ip: "41.230.###.67",
+            details: "Searched: 'do security cameras store footage'",
+          },
+        ],
+        // December 11, 2025 - Nour Elhouda Abidi
+        "Dec 11 - Nour Elhouda Abidi": [
+          {
+            time: "19:22:15",
+            user: "Nour Elhouda Abidi",
+            service: "Gmail",
+            action: "Email sent",
+            ip: "196.203.###.88",
+            details: "Workshop planning correspondence",
+          },
+          {
+            time: "20:45:33",
+            user: "Nour Elhouda Abidi",
+            service: "Google Drive",
+            action: "Document editing",
+            ip: "196.203.###.88",
+            details: "Event budget spreadsheet",
+          },
+          {
+            time: "22:18:47",
+            user: "Nour Elhouda Abidi",
+            service: "Instagram",
+            action: "Stories posting",
+            ip: "196.203.###.88",
+            details: "Personal content",
+          },
+        ],
+        // December 12, 2025 - Nour Elhouda Abidi
+        "Dec 12 - Nour Elhouda Abidi": [
+          {
+            time: "18:33:22",
+            user: "Nour Elhouda Abidi",
+            service: "Canva",
+            action: "Design creation",
+            ip: "196.203.###.88",
+            details: "Workshop poster design",
+          },
+          {
+            time: "20:15:44",
+            user: "Nour Elhouda Abidi",
+            service: "WhatsApp",
+            action: "Group chat active",
+            ip: "196.203.###.88",
+            details: "IEEE committee discussion",
+          },
+          {
+            time: "21:42:18",
+            user: "Nour Elhouda Abidi",
+            service: "Netflix",
+            action: "Streaming",
+            ip: "196.203.###.88",
+            details: "Movie night",
+          },
+        ],
+        // December 13, 2025 - Nour Elhouda Abidi
+        "Dec 13 - Nour Elhouda Abidi": [
+          {
+            time: "17:22:15",
+            user: "Nour Elhouda Abidi",
+            service: "Gmail",
+            action: "Email sent",
+            ip: "196.203.###.88",
+            details: "To: ela.hassine@ieee-fsm.tn - Subject: 'Tonight's meeting'",
+          },
+          {
+            time: "18:45:33",
+            user: "Nour Elhouda Abidi",
+            service: "Google Drive",
+            action: "Document access",
+            ip: "196.203.###.88",
+            details: "Downloaded budget files for meeting",
+          },
+          {
+            time: "20:35:22",
+            user: "Nour Elhouda Abidi",
+            service: "Uber",
+            action: "Ride requested",
+            ip: "196.203.###.88",
+            details: "Pickup: Home → Destination: Faculty of Science",
+          },
+          {
+            time: "20:47:18",
+            user: "Nour Elhouda Abidi",
+            service: "Uber",
+            action: "Ride completed",
+            ip: "196.203.###.88",
+            details: "Arrived at Faculty of Science",
+          },
+          {
+            time: "21:08:44",
+            user: "Nour Elhouda Abidi",
+            service: "Uber",
+            action: "Ride requested",
+            ip: "196.203.###.88",
+            details: "Pickup: Faculty of Science → Destination: Home",
+          },
+          {
+            time: "21:24:55",
+            user: "Nour Elhouda Abidi",
+            service: "Uber",
+            action: "Ride completed",
+            ip: "196.203.###.88",
+            details: "Arrived home safely",
+          },
+          {
+            time: "21:45:22",
+            user: "Nour Elhouda Abidi",
+            service: "WhatsApp",
+            action: "Message sent",
+            ip: "196.203.###.88",
+            details: "Family group: 'Home now, meeting went well'",
+          },
+        ],
+        // December 11, 2025 - Ela Hassine
+        "Dec 11 - Ela Hassine": [
+          {
+            time: "19:15:33",
+            user: "Ela Hassine",
+            service: "Slack",
+            action: "IEEE workspace active",
+            ip: "41.229.###.55",
+            details: "Team discussions",
+          },
+          {
+            time: "20:42:18",
+            user: "Ela Hassine",
+            service: "Gmail",
+            action: "Email management",
+            ip: "41.229.###.55",
+            details: "Workshop vendor correspondence",
+          },
+          {
+            time: "22:18:47",
+            user: "Ela Hassine",
+            service: "Spotify",
+            action: "Music streaming",
+            ip: "41.229.###.55",
+            details: "Relaxation playlist",
+          },
+        ],
+        // December 12, 2025 - Ela Hassine
+        "Dec 12 - Ela Hassine": [
+          {
+            time: "18:22:15",
+            user: "Ela Hassine",
+            service: "Zoom",
+            action: "Video call",
+            ip: "41.229.###.55",
+            details: "Workshop planning with vendors",
+          },
+          {
+            time: "20:15:44",
+            user: "Ela Hassine",
+            service: "Instagram",
+            action: "Browsing",
+            ip: "41.229.###.55",
+            details: "Event inspiration research",
+          },
+          {
+            time: "21:48:33",
+            user: "Ela Hassine",
+            service: "YouTube",
+            action: "Video watching",
+            ip: "41.229.###.55",
+            details: "Event management tutorials",
+          },
+        ],
+        // December 13, 2025 - Ela Hassine
+        "Dec 13 - Ela Hassine": [
+          {
+            time: "17:45:22",
+            user: "Ela Hassine",
+            service: "Gmail",
+            action: "Email reply",
+            ip: "41.229.###.55",
+            details: "Confirmed meeting with Nour",
+          },
+          {
+            time: "19:22:18",
+            user: "Ela Hassine",
+            service: "Uber",
+            action: "Ride requested",
+            ip: "41.229.###.55",
+            details: "Pickup: Home → Destination: Faculty",
+          },
+          {
+            time: "19:58:47",
+            user: "Ela Hassine",
+            service: "Uber",
+            action: "Ride completed",
+            ip: "41.229.###.55",
+            details: "Arrived at Faculty - last tracked activity",
+          },
+        ],
+        // December 11, 2025 - Marwen Ben Salem
+        "Dec 11 - Marwen Ben Salem": [
+          {
+            time: "19:33:22",
+            user: "Marwen Ben Salem",
+            service: "Steam",
+            action: "Game launch",
+            ip: "197.15.###.203",
+            details: "Rocket League",
+          },
+          {
+            time: "21:42:15",
+            user: "Marwen Ben Salem",
+            service: "Discord",
+            action: "Voice chat",
+            ip: "197.15.###.203",
+            details: "Gaming session with friends",
+          },
+          {
+            time: "23:18:47",
+            user: "Marwen Ben Salem",
+            service: "Steam",
+            action: "Game ended",
+            ip: "197.15.###.203",
+            details: "Total play time: 225 minutes",
+          },
+        ],
+        // December 13, 2025 - Marwen Ben Salem
+        "Dec 13 - Marwen Ben Salem": [
+          {
+            time: "19:35:22",
+            user: "Marwen Ben Salem",
+            service: "Steam",
+            action: "Game launch",
+            ip: "197.15.###.203",
+            details: "Valorant - started after leaving office",
+          },
+          {
+            time: "19:42:18",
+            user: "Marwen Ben Salem",
+            service: "Discord",
+            action: "Voice chat joined",
+            ip: "197.15.###.203",
+            details: "Gaming squad voice channel",
+          },
+          {
+            time: "22:15:44",
+            user: "Marwen Ben Salem",
+            service: "Steam",
+            action: "Still playing",
+            ip: "197.15.###.203",
+            details: "Multiple matches completed",
+          },
+          {
+            time: "23:48:33",
+            user: "Marwen Ben Salem",
+            service: "Steam",
+            action: "Game session ended",
+            ip: "197.15.###.203",
+            details: "Continuous play session - alibi verified",
+          },
+        ],
+      };
+
+      function adminLogin(e) {
+        e.preventDefault();
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+
+        if (user === ADMIN_USER && pass === ADMIN_PASS) {
+          document.getElementById("loginScreen").classList.add("hidden");
+          document.getElementById("mainPanel").classList.add("active");
+          showLogs();
+        } else {
+          const err = document.getElementById("errorMsg");
+          err.style.display = "block";
+          setTimeout(() => (err.style.display = "none"), 3000);
+        }
+      }
+
+      function showLogs() {
+        hideAllSections();
+        document.getElementById("logsSection").style.display = "block";
+
+        const container = document.getElementById("logsContainer");
+        container.innerHTML =
+          serverLogs
+            .map(
+              (log) => `
+                <div class="log-entry ${log.warning ? "log-warning" : ""} ${
+                log.critical ? "log-critical" : ""
+              }">
+                    <span class="log-time">[${log.time}]</span>
+                    <span class="log-user">${log.user}</span>
+                    ${log.ip ? `<span class="ip-address">(${log.ip})</span>` : ""}
+                    | <span class="log-action">${log.action}:</span> ${log.details}
+                </div>
+            `
+            )
+            .join("") +
+          `
+            `;
+      }
+
+      function showKeycard() {
+        hideAllSections();
+        document.getElementById("keycardSection").style.display = "block";
+
+        const container = document.getElementById("keycardContainer");
+
+        // Group logs by date
+        const groupedLogs = {};
+        keyCardLogs.forEach((log) => {
+          if (!groupedLogs[log.date]) {
+            groupedLogs[log.date] = [];
+          }
+          groupedLogs[log.date].push(log);
+        });
+
+        let html = "";
+        Object.keys(groupedLogs)
+          .sort()
+          .forEach((date) => {
+            html += `<div class="date-header">${date}, 2025</div>`;
+            html += groupedLogs[date]
+              .map(
+                (log) => `
+                <div class="log-entry ${log.warning ? "log-warning" : ""} ${
+                  log.critical ? "log-critical" : ""
+                }">
+                    <span class="log-time">[${log.time}]</span>
+                    <span class="log-user">${log.name}</span>
+                    | ${log.location} | <strong>${log.action}</strong>
+                    ${log.note ? `<br><span style="color: #608b4e;">📝 ${log.note}</span>` : ""}
+                </div>
+            `
+              )
+              .join("");
+          });
+
+        html += `
+            `;
+
+        container.innerHTML = html;
+      }
+
+      function showActivity() {
+        hideAllSections();
+        document.getElementById("activitySection").style.display = "block";
+
+        const container = document.getElementById("activityContainer");
+
+        let html = "";
+
+        Object.keys(userActivity).forEach((dayUser) => {
+          const isYassine = dayUser.includes("Yassine Azzouz");
+          const isAmine = dayUser.includes("Amine Zbaa");
+
+          html += `<div class="date-header">${dayUser}</div>`;
+
+          html += userActivity[dayUser]
+            .map(
+              (log) => `
+                <div class="log-entry ${log.warning ? "log-warning" : ""} ${
+                log.critical ? "log-critical" : ""
+              }">
+                    <span class="log-time">[${log.time}]</span>
+                    <span class="ip-address">${log.ip}</span>
+                    | <span class="log-user">${log.service}</span>: ${log.action}
+                    <br><span style="color: #608b4e; font-size: 0.85rem;">${log.details}</span>
+                </div>
+            `
+            )
+            .join("");
+        });
+
+        html += `
+            `;
+
+        container.innerHTML = html;
+      }
+
+      function showSecurity() {
+        hideAllSections();
+        document.getElementById("securitySection").style.display = "block";
+
+        const container = document.getElementById("securityContainer");
+        container.innerHTML = securityFootage
+          .map(
+            (footage) => `
+                <div class="log-entry ${footage.warning ? "log-warning" : ""} ${
+              footage.critical ? "log-critical" : ""
+            }">
+                    <span class="log-time">[${footage.time}]</span>
+                    <span style="color: #ce9178; font-weight: bold;">${footage.camera}</span>
+                    | <span style="color: #608b4e;">${footage.location}</span>
+                    <br><strong>${footage.event}</strong>
+                    <br><span style="color: #d4d4d4; font-size: 0.85rem;">${footage.details}</span>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      function showWitness() {
+        hideAllSections();
+        document.getElementById("witnessSection").style.display = "block";
+
+        const container = document.getElementById("witnessContainer");
+        container.innerHTML =
+          witnessStatements
+            .map(
+              (statement) => `
+                <div class="log-entry ${statement.warning ? "log-warning" : ""} ${
+                statement.critical ? "log-critical" : ""
+              }">
+                    <span class="log-time">[${statement.time}]</span>
+                    <span class="log-user">${statement.witness}</span>
+                    | <strong>${statement.statement}</strong>
+                    <br><div style="margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px;">
+                        <span style="color: #d4d4d4;">${statement.content}</span>
+                    </div>
+                    ${
+                      statement.note
+                        ? `<br><span style="color: #f44747; font-size: 0.85rem; font-weight: bold;">⚠ ${statement.note}</span>`
+                        : ""
+                    }
+                </div>
+            `
+            )
+            .join("") +
+          `
+                <div class="highlight-box">
+                    <h4 style="color: #f44747; margin-bottom: 15px;">⚠ FABRICATED EVIDENCE ANALYSIS:</h4>
+                    <ul style="color: #d4d4d4; line-height: 2; list-style-position: inside;">
+                        <li>Voice message contains AI synthesis artifacts (forensically verified)</li>
+                        <li>Message was scheduled for delayed send - created at 20:55, sent at 21:22</li>
+                        <li>Email draft created via remote desktop from Yassine's IP address</li>
+                        <li>Draft deliberately left unsent to appear as if Amine hesitated</li>
+                        <li>No legitimate communications from Amine to Ela that evening</li>
+                        <li>Yassine's initial statement claims he was home - contradicted by all evidence</li>
+                        <li>Anonymous witness report matches Yassine's appearance and timing</li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="margin-top: 20px; border-left-color: #4ec9b0;">
+                    <h4 style="color: #4ec9b0; margin-bottom: 10px;">CREDIBLE WITNESS STATEMENTS:</h4>
+                    <p style="color: #d4d4d4; line-height: 1.8;">
+                        <strong>Ikhlas Bahia:</strong> First responder, discovered body next morning.<br>
+                        <strong>Nour Elhouda Abidi:</strong> Last confirmed person to see Ela alive (21:11 PM).
+                        Account verified by cameras, keycard logs, and Uber records.<br>
+                        <strong>Marwen Ben Salem:</strong> Left office before Ela arrived. Alibi verified by gaming platform timestamps.
+                    </p>
+                </div>
+            `;
+      }
+
+      function hideAllSections() {
+        document.getElementById("logsSection").style.display = "none";
+        document.getElementById("keycardSection").style.display = "none";
+        document.getElementById("activitySection").style.display = "none";
+        document.getElementById("securitySection").style.display = "none";
+        document.getElementById("witnessSection").style.display = "none";
+      }
+
+      function logout() {
+        document.getElementById("loginScreen").classList.remove("hidden");
+        document.getElementById("mainPanel").classList.remove("active");
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+        hideAllSections();
+      }
+    </script>
+  </body>
+</html>
