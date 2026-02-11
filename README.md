@@ -1,4 +1,4 @@
-# MurderGame-WEHACK0.0
+# IEEE SERVER ADMIN
 
 to use it:
 admin
